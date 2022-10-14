@@ -1,9 +1,5 @@
-from asyncore import file_dispatcher
 import os
 import re
-import time
-import math
-import io
 import pandas as pd
 
 total_count = 0
@@ -24,6 +20,11 @@ def add_map(data):
                 word_map[word] = 1
                 total_count = total_count + 1
 
+def string_found(string1, string2):
+    if re.search(r"\b" + re.escape(string1) + r"\b", string2):
+        return True
+    return False
+
 def convert(list):
     result = {}
     for i in list:
@@ -35,21 +36,21 @@ def progress():
     for file in files:
         file = 'Cranfield/' + file
         data=open(file,'r').read().replace('\n', ' ')
-        start_pos = data.find("<TEXT>") + 6
-        end_pos = data.find("</TEXT>")
-        data = data[start_pos : end_pos]
         add_map(data)
 
-def create_df(df):
+def create_df(df, map):
+    count = 0
     df2 = pd.DataFrame({'Document': []})
-    for i in word_map.keys():
+    for i in map.keys():
+        count+=1
         dummy = []
         for file in os.listdir('Cranfield'):
             file_path = 'Cranfield/' + file
             data=open(file_path,'r').read().replace('\n', ' ')
-            if i in data: 
+            if string_found(i, data): 
                 dummy.append(file)
-        df2.append(dummy, ignore_index=True)
+        df2 = pd.concat([df2, pd.DataFrame.from_dict({"Document": [dummy]})], ignore_index="True")
+        print('{} term(s) done'.format(count))
                         
     df_result = df.join(df2)
     df_result.to_csv("posting_list.csv")
@@ -68,9 +69,7 @@ if __name__ == "__main__":
                         "Count": word_map.values()})
     print(df1.head())
 
-    # df_test = pd.DataFrame.from_dict({"Documents": [['t', 'k']]})
-    # df_test2 = pd.DataFrame.from_dict({"Index": [0]})
-    # df_test3 = pd.concat([df_test, df_test2], axis=1, ignore_index=True)
-    # df_test3 = df_test2.join(df_test)
-    # print(df_test3.head())
-    # create_df(df1)
+    # create_df(df1, word_map)
+
+    
+    
